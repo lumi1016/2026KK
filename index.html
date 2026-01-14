@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>釜山 2026 家族之旅</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        
+        :root {
+            --busan-blue: #1E40AF;
+            --bg-color: #F8FAFC;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: #1E293B;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        .tab-active {
+            background: var(--busan-blue) !important;
+            color: white !important;
+            box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
+            transform: scale(1.05);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        /* 飯店專屬深色樣式 */
+        .hotel-card { 
+            background: #0F172A !important; 
+            color: white !important; 
+            border: 2px solid #334155; 
+            margin-top: 3rem;
+        }
+        
+        .btn-press:active { transform: scale(0.95); opacity: 0.9; }
+
+        /* 一般景點導遊視角樣式 */
+        .guide-box { border-left: 4px solid #3B82F6; background: #EFF6FF; }
+        .local-tip { border-left: 4px solid #F59E0B; background: #FFFBEB; }
+
+        /* 飯店深色卡片內的導遊視角樣式 - 使用亮色字體 */
+        .hotel-guide-box { border-left: 4px solid #60A5FA; background: rgba(30, 58, 138, 0.4); }
+        .hotel-local-tip { border-left: 4px solid #FBBF24; background: rgba(120, 53, 15, 0.4); }
+
+        .animate-slideUp { animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1) forwards; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .papago-color { color: #00C73C; }
+    </style>
+</head>
+<body class="max-w-md mx-auto shadow-2xl min-h-screen pb-24 relative text-left">
+
+    <!-- 頂部標題與四個小工具區 -->
+    <header class="bg-[#1E40AF] text-white p-8 rounded-b-[3rem] shadow-xl">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-black mb-1">釜山 2026</h1>
+                <p class="text-[10px] font-bold text-blue-100/70 tracking-widest uppercase">Family Premium Guide</p>
+            </div>
+            <div class="text-right">
+                <span id="weather-temp" class="text-2xl font-black text-right">--°C</span>
+                <p class="text-[8px] font-bold opacity-60 uppercase text-right">Busan</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2 text-center">
+            <button onclick="window.toggleTool('calc')" class="glass-btn p-3 rounded-2xl flex flex-col items-center btn-press shadow-sm text-blue-900">
+                <i class="fas fa-won-sign text-blue-600 mb-1 text-sm"></i>
+                <span class="text-[9px] font-black">匯率</span>
+            </button>
+            <button onclick="window.toggleTool('trans')" class="glass-btn p-3 rounded-2xl flex flex-col items-center btn-press shadow-sm text-blue-900">
+                <i class="fas fa-language papago-color mb-1 text-sm"></i>
+                <span class="text-[9px] font-black">翻譯</span>
+            </button>
+            <button onclick="window.toggleTool('ledger')" class="glass-btn p-3 rounded-2xl flex flex-col items-center btn-press shadow-sm text-blue-900">
+                <i class="fas fa-calculator text-emerald-600 mb-1 text-sm"></i>
+                <span class="text-[9px] font-black">分帳</span>
+            </button>
+            <button onclick="window.toggleTool('checklist')" class="glass-btn p-3 rounded-2xl flex flex-col items-center btn-press shadow-sm text-blue-900">
+                <i class="fas fa-clipboard-check text-purple-500 mb-1 text-sm"></i>
+                <span class="text-[9px] font-black">清單</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 日期切換導覽 -->
+    <nav class="flex overflow-x-auto whitespace-nowrap px-4 py-6 no-scrollbar sticky top-0 z-40 bg-slate-50/95 backdrop-blur-md border-b border-slate-100">
+        <div class="flex space-x-3 mx-auto px-4" id="day-nav-container"></div>
+    </nav>
+
+    <!-- 主行程內容區 -->
+    <main id="main-content" class="px-6 space-y-12 py-4 text-left"></main>
+
+    <!-- 彈窗模組 -->
+    <div id="tool-modal" class="hidden fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-md">
+        <div class="bg-white w-full max-w-md rounded-t-[2.5rem] shadow-2xl overflow-hidden animate-slideUp max-h-[90vh] flex flex-col relative text-left">
+            <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mt-4 mb-2"></div>
+            <button onclick="window.closeModal()" class="absolute top-6 right-6 z-50 w-10 h-10 rounded-full bg-slate-100 text-gray-500 flex items-center justify-center active:scale-90"><i class="fas fa-times"></i></button>
+            <div id="modal-body" class="flex-1 overflow-y-auto no-scrollbar p-8 text-left"></div>
+        </div>
+    </div>
+
+    <!-- 體力進度環 (底部固定顯示) -->
+    <footer class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-sm bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white p-5 z-50 flex justify-between items-center px-10">
+        <div class="flex flex-col items-center text-center">
+            <i class="fas fa-id-badge text-blue-700 text-xl text-center"></i>
+            <span class="text-[8px] font-black text-gray-400 mt-1 uppercase text-center">導遊</span>
+        </div>
+        <div class="text-center relative -top-2">
+            <div class="relative w-14 h-14 mx-auto">
+                <svg class="w-full h-full transform -rotate-90">
+                    <circle cx="28" cy="28" r="24" stroke="#f1f5f9" stroke-width="4" fill="transparent" />
+                    <circle id="stamina-ring" cx="28" cy="28" r="24" stroke="var(--busan-blue)" stroke-width="4" fill="transparent" stroke-dasharray="150" stroke-dashoffset="150" />
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center font-black text-blue-700">
+                    <span id="stamina-val" class="text-xs font-black text-center">--%</span>
+                </div>
+            </div>
+            <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest text-center">今日體力</span>
+        </div>
+        <button onclick="window.switchDay(currentDayIdx)" class="flex flex-col items-center text-center">
+            <i class="fas fa-sync-alt text-orange-600 text-xl text-center"></i>
+            <span class="text-[8px] font-black text-gray-400 mt-1 uppercase text-center">刷新</span>
+        </button>
+    </footer>
+
+    <script>
+        const apiKey = ""; // Gemini API Key
+
+        // --- 全局行程資料庫 (根據 CSV 美食與最新行程細節補強) ---
+        const tourData = {
+            1: {
+                label: "D1 啟程釜山", stamina: 95,
+                events: [
+                    { t: "12:00", s: "高雄小港機場集合", type: "交通", i: "plane-departure", n: "預備飛往 PUS。去程：釜山航空 BX796。", m: "GaoXiong+Airport", guide: "資深導遊帶路：下飛機通關會快很多！建議爭取前排位置。", tip: "提醒：BX796 預計 15:00 起飛，13:00 開始受理行李托運。" },
+                    { t: "18:25", s: "抵達金海機場 (PUS)", type: "交通", i: "shuttle-van", n: "與預約司機會合 ($5,000)。", m: "김해국제공항", guide: "資深導遊帶路：通關排隊有時會超過 30 分鐘，請儘快行動。", tip: "花費：機場接送費用預算為 $5,000 TWD。" },
+                    { t: "19:30", s: "海雲台傳統市場", type: "美食", i: "utensils", n: "初嚐釜山小吃：黑糖餅、盲鰻、魚糕。", m: "해운대 전통시장", guide: "資深導遊帶路：市場裡的「尚國家辣炒年糕」是在地名店。", tip: "在地建議：市場裡面有 Money Box 可換匯。" },
+                    { t: "飯店", s: "住宿：日落飯店 (Sunset Hotel)", type: "飯店", i: "hotel", n: "入住海雲台核心商圈。", m: "해운대 선셋호텔", guide: "資深導遊帶路：九南路美食街營業到深夜。", tip: "在地建議：旁邊有 24 小時營業的「真味家烤韓排」，當地人激推。" }
+                ]
+            },
+            2: {
+                label: "D2 海景漫步", stamina: 70,
+                events: [
+                    { t: "08:30", s: "集合出發 (早餐自理)", type: "交通", i: "walking", n: "搭車(7分)或海灘步行(20分)前往尾浦。", m: "해운대해수욕장", guide: "資深導遊帶路：早晨漫步海雲台沙灘非常舒服，體力好推薦走過去。", tip: "車資：計程車約 ₩4,800。" },
+                    { t: "09:05", s: "自然島海鹽麵包", type: "美食", i: "bread-slice", n: "9點首發出爐，搶購釜山最夯名店。", m: "자연도소금빵 해운대", guide: "資深導遊帶路：麵包底部酥脆，海鹽靈魂必吃。", tip: "提醒：附近 Baker's box 10:00 營業。" },
+                    { t: "10:00", s: "膠囊列車 (尾浦發車)", type: "景點", i: "train", n: "全海景慢行體驗至清沙浦。", m: "해운대블루라인파크 미포정거장" },
+                    { t: "11:00", s: "灌籃高手平交道 / 天空步道", type: "景點", i: "camera", n: "拍美照聖地，步道視角遼闊。", m: "청사포 다릿돌전망대" },
+                    { t: "12:00", s: "午餐：清沙浦名店", type: "美食", i: "utensils", n: "推薦「秀敏家」或「道熙家」。或回海雲台吃「31公分海鮮麵」。", m: "청사포 수민이네", guide: "資深導遊帶路：清沙浦烤扇貝非常鮮甜，配海景無敵。", tip: "麵食：31公分海鮮麵分量驚人，每人約 ₩10,000。" },
+                    { t: "14:00", s: "釜山水族館 (視情況)", type: "景點", i: "fish", n: "使用釜山 PASS 打 7 折。", m: "SEA LIFE 부산아쿠아리움" },
+                    { t: "17:00", s: "Busan X the Sky", type: "景點", i: "sun", n: "99樓星巴克，賞 17:25 海平面日落。", m: "부산엑스더스카이" },
+                    { t: "19:00", s: "The Yacht 遊艇體驗 (PASS)", type: "體驗", i: "ship", n: "海上煙火夜宴。晚間班次每人加收 ₩5,000。", m: "부산 요트투어", guide: "資深導遊帶路：在海上看廣安大橋夜景是最美的視角。", tip: "提醒：需提早半小時報到。" },
+                    { t: "飯店", s: "住宿：日落飯店 (Sunset Hotel)", type: "飯店", i: "hotel", n: "續住海雲台日落飯店。", m: "해운대 선셋호텔" }
+                ]
+            },
+            3: {
+                label: "D3 東釜山樂園", stamina: 65,
+                events: [
+                    { t: "08:50", s: "搭車前往海岸列車 (尾浦)", type: "交通", i: "taxi", n: "車資約 ₩4,800，車程 7 分。", m: "해운대블루라인파크 미포정거장" },
+                    { t: "09:30", s: "海岸列車 (尾浦→松亭)", type: "交通", i: "train", n: "欣賞保津川溪谷，需提早 20 分鐘換票。", m: "송정역", tip: "車資：後續搭車至滑坡車約 ₩5,700 (8分)。" },
+                    { t: "10:20", s: "Skyline Luge 滑車 (PASS)", type: "體驗", i: "bolt", n: "山坡滑下極速感，老少咸宜。", m: "스카이라인 루지 부산" },
+                    { t: "12:30", s: "午餐：鄉村飯桌家", type: "美食", i: "utensils", n: "超過 20 道配菜韓式定食。", m: "풍원장 시골밥상집", tip: "步行：從 Luge 走過來只要 8 分鐘。" },
+                    { t: "14:00", s: "樂天冒險世界 (PASS)", type: "景點", i: "fort-awesome", n: "童話主題樂園，刺激與溫馨兼具。", m: "롯데월드 어드벤처 부산", guide: "資深導遊帶路：釜山最大主題樂園。Giant Digger 雲霄飛車是必玩。", tip: "在地建議：進場租借韓國校服拍照，效果滿分。" },
+                    { t: "18:00", s: "Club D Oasis 汗蒸幕 (PASS)", type: "體驗", i: "hot-tub", n: "五星級海景放鬆體驗，含溫泉足浴。", m: "클럽디 오아시스", guide: "資深導遊帶路：一定要去 6 樓看海景。免門票 4 小時。", tip: "車資：搭車約 ₩12,400 (20分)。需自備泳衣。" },
+                    { t: "飯店", s: "住宿：日落飯店 (Sunset Hotel)", type: "飯店", i: "hotel", n: "海雲台最後一晚。", m: "해운대 선셋호텔" }
+                ]
+            },
+            4: {
+                label: "D4 西面與松島", stamina: 85,
+                events: [
+                    { t: "08:30", s: "Egg Drop 早餐後搬遷", type: "美食", i: "bread-slice", n: "海雲台站 7 號出口必吃厚吐司。", m: "에그드랍 해운대점", tip: "交通：搭車至西面約 ₩15,400 (30分)。" },
+                    { t: "10:30", s: "H大道飯店 CI / 寄放行李", type: "飯店", i: "hotel", n: "搬至西面核心商圈飯店。", m: "H에비뉴 호텔 서면역" },
+                    { t: "11:00", s: "雷射競技 / Running Man (PASS)", type: "體驗", i: "running", n: "化身韓綜主角全家闖關。", m: "런닝맨 부산" },
+                    { t: "14:00", s: "松島海上纜車 (PASS)", type: "景點", i: "bridge", n: "水晶車廂俯瞰松島海面。", m: "송도해상케이블카", guide: "資深導遊帶路：終點有龍宮雲橋跟天空步道。", tip: "美食：晚餐回西面吃排隊名店「浦項豬肉湯飯」。" },
+                    { t: "飯店", s: "住宿：H大道飯店 (H-AVENUE)", type: "飯店", i: "hotel", n: "入住西面中心飯店。", m: "H에비뉴 호텔 서면역", guide: "資深導遊帶路：西面站交通極其方便，宵夜選擇多。", tip: "在地建議：浦項豬肉湯飯 24 小時營業，隨時可衝。" }
+                ]
+            },
+            5: {
+                label: "D5 文化巡禮", stamina: 55,
+                events: [
+                    { t: "09:30", s: "甘川洞文化村", type: "景點", i: "palette", n: "尋找彩色村的小王子。", m: "감천문화마을" },
+                    { t: "12:00", s: "午餐：明星(名聲)一隻雞", type: "美食", i: "drumstick", n: "暖胃經典雞湯名店。", m: "명성이이치계 부산", tip: "必點：最後一定要加點刀切麵。" },
+                    { t: "14:00", s: "白淺灘文化村 / 太宗台", type: "景點", i: "camera", n: "絕美絕影海岸步道散策。", m: "흰여울문화마을", guide: "資深導遊帶路：這裡被譽為釜山聖托里尼，咖啡廳極多。" },
+                    { t: "15:30", s: "太宗台海洋飛行 (PASS 6折)", type: "體驗", i: "rocket", n: "斷崖上的高空設施。", m: "태종대 오션플라잉", tip: "花費：費用 ₩30,000，記得掃碼打折。" },
+                    { t: "飯店", s: "住宿：H大道飯店 (H-AVENUE)", type: "飯店", i: "hotel", n: "續住西面 H 大道飯店。", m: "H에비뉴 호텔 서면역" }
+                ]
+            },
+            6: {
+                label: "D6 南浦市場", stamina: 90,
+                events: [
+                    { t: "10:00", s: "札嘎其魚市場 (10號口)", type: "美食", i: "fish", n: "世界級活海鮮，挑戰生章魚。", m: "자갈치시장" },
+                    { t: "14:00", s: "影島大橋開橋秀", type: "景點", i: "bridge", n: "震撼儀式後逛南浦商圈。", m: "영도대교", guide: "資深導遊帶路：商圈包含光復路、BIFF、國際市場、富平市場。", tip: "美食：南浦雪濃湯 24 小時開放，補體力首選。" },
+                    { t: "飯店", s: "住宿：H大道飯店 (H-AVENUE)", type: "飯店", i: "hotel", n: "最後一晚西面住宿。", m: "H에비뉴 호텔 서면역" }
+                ]
+            },
+            7: {
+                label: "D7 返抵國門", stamina: 95,
+                events: [
+                    { t: "08:30", s: "機場接送出發 ($4,500)", type: "交通", i: "taxi", n: "提早前往機場辦理退稅。", m: "김해공항" },
+                    { t: "09:30", s: "報到、托運、領免稅品", type: "交通", i: "ticket", n: "金海機場辦理回程手續。" },
+                    { t: "12:00", s: "回程：BX795 起飛", type: "交通", i: "plane-arrival", n: "平安抵達高雄小港機場。", m: "Kaohsiung+Airport" },
+                    { t: "飯店", s: "溫馨家園", type: "飯店", i: "home", n: "釜山 2026 成功達成！", m: "Kaohsiung" }
+                ]
+            }
+        };
+
+        const checkListData = ["護照正本", "韓國網路卡/eSIM", "韓元現金", "WOWPASS", "轉接頭 (4.8mm)", "常備藥品", "保暖外套"];
+        let currentDayIdx = 1;
+        let expenses = [];
+        let exchangeRate = 0.0243;
+
+        // --- PAPAGO AI ---
+        async function callGemini(prompt, systemInstruction) {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: systemInstruction }] }
+                    })
+                });
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "AI 目前忙碌中。";
+            } catch (e) { return "連線超時。"; }
+        }
+
+        window.askAI = async () => {
+            const text = document.getElementById('tt').value;
+            if (!text) return;
+            const btn = document.getElementById('ai-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin text-center"></i> PAPAGO 翻譯中...';
+            const res = await callGemini(`翻譯成韓國旅遊道地用語並附拼音： "${text}"`, "你是專業韓國旅遊導遊。請用繁體中文回答。");
+            document.getElementById('ai-res').innerHTML = `<div class="mt-4 p-5 bg-green-50 border-2 border-green-100 rounded-2xl text-sm font-bold whitespace-pre-wrap text-left shadow-sm text-left text-slate-800 text-left">${res}</div>`;
+            btn.innerHTML = '✨ PAPAGO 智慧翻譯';
+        };
+
+        // --- UI 控制 ---
+        window.switchDay = (d) => {
+            currentDayIdx = d;
+            document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById(`tab${d}`).classList.add('tab-active');
+            
+            const dayData = tourData[d];
+            let html = `<div class="fade-in space-y-12 text-left">`;
+            
+            dayData.events.forEach((e, idx) => {
+                const isHotel = e.type === '飯店';
+                const cardClass = isHotel ? 'hotel-card shadow-2xl p-8 rounded-[2.5rem]' : 'bg-white shadow-lg p-6 rounded-[2rem] border border-slate-100';
+                const naverMapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(e.m || e.s)}`;
+
+                const guideBoxClass = isHotel ? 'hotel-guide-box' : 'guide-box';
+                const tipBoxClass = isHotel ? 'hotel-local-tip' : 'local-tip';
+                const guideTitleColor = isHotel ? 'text-blue-300' : 'text-blue-700';
+                const tipTitleColor = isHotel ? 'text-amber-400' : 'text-amber-600';
+                const contentTextColor = isHotel ? 'text-blue-100' : 'text-slate-700';
+
+                html += `
+                    <div class="relative text-left">
+                        <div class="flex items-center gap-4 mb-4 text-left">
+                            <div class="w-12 h-12 rounded-2xl ${isHotel ? 'bg-yellow-400 text-slate-900' : 'bg-blue-600 text-white'} flex items-center justify-center font-black shadow-lg">
+                                ${isHotel ? '<i class="fas fa-bed text-center text-center"></i>' : e.t}
+                            </div>
+                            <div class="text-left text-left">
+                                <h3 class="text-xl font-black text-slate-800 text-left text-left text-left">${e.s}</h3>
+                                <span class="text-[10px] font-bold uppercase tracking-widest ${isHotel ? 'text-blue-400' : 'text-slate-400'} text-left text-left text-left">${e.type}</span>
+                            </div>
+                        </div>
+                        <div class="${cardClass} text-left text-left text-left">
+                            <p class="text-sm font-bold ${isHotel ? 'text-slate-300' : 'text-slate-500'} leading-relaxed mb-6 text-left text-left text-left">${e.n}</p>
+                            
+                            ${e.guide ? `
+                                <div class="${guideBoxClass} p-4 rounded-2xl mb-4 text-left font-black text-xs leading-relaxed text-left text-left text-left">
+                                    <h4 class="text-[10px] ${guideTitleColor} mb-1 uppercase tracking-widest text-left text-left text-left text-left font-black"><i class="fas fa-comment-dots mr-1 text-left text-left text-left text-left"></i>資深導遊帶路</h4>
+                                    <span class="${contentTextColor}">${e.guide}</span>
+                                </div>
+                            ` : ''}
+                            
+                            ${e.tip ? `
+                                <div class="${tipBoxClass} p-4 rounded-2xl mb-4 text-left font-black text-xs leading-relaxed text-left text-left text-left text-left text-left">
+                                    <h4 class="text-[10px] ${tipTitleColor} mb-1 uppercase tracking-widest text-left text-left text-left text-left text-left font-black"><i class="fas fa-lightbulb mr-1 text-left text-left text-left text-left text-left"></i>在地隱藏建議</h4>
+                                    <span class="${contentTextColor}">${e.tip}</span>
+                                </div>
+                            ` : ''}
+
+                            <a href="${naverMapUrl}" target="_blank" class="block w-full py-4 ${isHotel ? 'bg-blue-600' : 'bg-slate-900'} text-white rounded-2xl text-center text-sm font-black shadow-lg mt-4 btn-press text-center text-center text-center">
+                                <i class="fas fa-map-marked-alt mr-2 text-center text-center text-center text-center"></i>開啟 Naver Map 導航
+                            </a>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('main-content').innerHTML = html + `</div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.toggleTool = (type) => {
+            const modal = document.getElementById('tool-modal');
+            const body = document.getElementById('modal-body');
+            modal.classList.remove('hidden');
+            if (type === 'calc') {
+                body.innerHTML = `<h3 class="text-2xl font-black mb-6 text-left text-slate-800">匯率換算</h3><div class="bg-blue-50 p-6 rounded-3xl mb-6 font-black text-left text-left text-left"><p class="text-xs text-blue-600 text-left font-black text-left text-left text-left text-left">參考：1 KRW ≈ 0.0243 TWD</p></div><input type="number" id="ki" class="w-full text-4xl font-black border-b-4 border-blue-600 py-4 outline-none mb-4 text-left text-slate-800 text-left text-left" oninput="document.getElementById('to').innerText = Math.round(this.value * 0.0243).toLocaleString()" placeholder="₩"><p id="to" class="text-5xl font-black text-blue-700 text-left text-left text-left">0</p><p class="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest text-left text-left text-left text-left font-black text-left text-left">估算台幣 (TWD)</p>`;
+            } else if (type === 'trans') {
+                body.innerHTML = `<div class="flex justify-between items-center mb-6 text-left text-left text-left text-left text-left text-left"><h3 class="text-2xl font-black text-left font-black text-left text-left text-left text-left text-left text-left text-slate-800 text-left text-left text-left text-left text-left"><i class="fas fa-language papago-color mr-2 text-left text-left text-left text-left text-left text-left text-left text-left text-left"></i>PAPAGO 翻譯</h3></div><textarea id="tt" rows="4" class="w-full border-2 border-slate-100 p-4 rounded-3xl mb-4 text-left font-bold focus:border-green-400 outline-none transition-all text-left text-left text-left text-left text-left text-slate-800 text-left text-left text-left text-left" placeholder="輸入中文，AI 將以 PAPAGO 標準翻譯為道地韓語..."></textarea><button id="ai-btn" onclick="window.askAI()" class="w-full bg-green-600 text-white py-5 rounded-[2rem] font-black shadow-lg uppercase tracking-widest text-center text-center text-center text-center text-center text-center text-center text-center text-center">✨ PAPAGO 智慧翻譯</button><div id="ai-res"></div>`;
+            } else if (type === 'ledger') {
+                body.innerHTML = `
+                    <div class="flex flex-col h-full text-left text-left text-left text-left">
+                        <div class="flex justify-between items-center mb-6 text-left text-left text-left text-left">
+                            <h3 class="text-2xl font-black text-emerald-600 text-left text-left text-left text-left"><i class="fas fa-calculator mr-2 text-left text-left text-emerald-600 text-left text-left"></i>家族分帳</h3>
+                            <a href="https://app.lightsplit.com/login" target="_blank" class="text-[10px] font-black text-blue-600 border border-blue-200 px-3 py-1 rounded-full text-left text-left text-left text-left text-left">全螢幕開啟 <i class="fas fa-external-link-alt ml-1 text-left text-left text-left text-left text-left"></i></a>
+                        </div>
+                        <div class="flex-1 rounded-3xl overflow-hidden border-2 border-slate-100 bg-slate-50 text-left text-left text-left" style="min-height: 550px;">
+                            <iframe src="https://app.lightsplit.com/login" class="w-full h-full border-none text-left text-left text-left" style="min-height: 550px;"></iframe>
+                        </div>
+                    </div>`;
+            } else if (type === 'checklist') {
+                body.innerHTML = `<h3 class="text-2xl font-black mb-6 text-left font-black text-left text-left text-left text-left text-slate-800 text-left text-left text-left text-left">提醒清單</h3><div class="space-y-3 text-left text-left text-left text-left text-left text-left text-left text-left">${checkListData.map(t => `<label class="flex items-center gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 font-bold text-left text-left text-left text-slate-800 text-left text-left text-left text-left"><input type="checkbox" class="w-6 h-6 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500 text-left text-left text-left text-left text-left text-left text-left"><span class="text-sm font-black text-slate-700 text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left">${t}</span></label>`).join('')}</div>`;
+            }
+        };
+
+        window.closeModal = () => document.getElementById('tool-modal').classList.add('hidden');
+
+        window.onload = async () => {
+            const nav = document.getElementById('day-nav-container');
+            const dayNames = ["第一日", "第二日", "第三日", "第四日", "第五日", "第六日", "第七日"];
+            nav.innerHTML = dayNames.map((n, i) => `<button onclick="window.switchDay(${i+1})" id="tab${i+1}" class="day-tab px-6 py-2 rounded-2xl bg-white text-gray-400 border border-slate-100 font-black transition-all text-xs shadow-sm text-center text-center text-center text-center text-center text-center text-center text-center">${n}</button>`).join('');
+            try {
+                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=35.17&longitude=129.07&current_weather=true");
+                const d = await res.json();
+                document.getElementById('weather-temp').innerText = `${Math.round(d.current_weather.temperature)}°C`;
+            } catch(e) {}
+            window.switchDay(1);
+        };
+    </script>
+</body>
+</html>
